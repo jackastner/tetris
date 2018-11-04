@@ -6,14 +6,6 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-
-const unsigned int tetrominoColors[8] = {0x000000,0x00FFFF,0xFFFF00,0x800080,0x008000,0xFF0000,0x0000FF,0xFFA500};
-
-const int BLOCK_WIDTH  = PLAY_FIELD_WIDTH / GAME_WIDTH;
-const int BLOCK_HEIGHT = PLAY_FIELD_HEIGHT / GAME_HEIGHT;
-
-unsigned int REFRESH_RATE_MICROS = 200000u;
-
 /* Unexported function definitions */
 static void renderGame();
 static void renderBackground();
@@ -30,6 +22,34 @@ static void clearWindow();
 static void updateDisplay();
 static void handleKeyEvent(SDL_Event event);
 static void updateDisplay();
+
+/* Display constants */
+const unsigned int tetrominoColors[8] = {0x000000,0x00FFFF,0xFFFF00,0x800080,0x008000,0xFF0000,0x0000FF,0xFFA500};
+
+/* dependant on background texture */
+#define PLAY_FIELD_X_OFFSET 0
+#define PLAY_FIELD_Y_OFFSET 0
+
+/* placeholder values */
+#define WINDOW_HEIGHT 100 
+#define WINDOW_WIDTH 100
+
+/* dependant on background texture */
+#define PLAY_FIELD_WIDTH WINDOW_WIDTH
+#define PLAY_FIELD_HEIGHT WINDOW_HEIGHT
+
+#define BLOCK_WIDTH  (PLAY_FIELD_WIDTH / GAME_WIDTH)
+#define BLOCK_HEIGHT (PLAY_FIELD_HEIGHT / GAME_HEIGHT)
+
+#define REFRESH_RATE_MICROS 200000u
+/* placeholder value */
+#define INPUT_RATE_MICROS 200000u
+
+/*SDL vars*/
+SDL_Window* window;
+SDL_Renderer* renderer;
+SDL_Texture* background;
+TTF_Font *font;
 
 void renderGame(){
     renderBackground();
@@ -94,7 +114,7 @@ void renderCurrentTetromino(){
 
 void renderHeldTetromino(){
     if(heldTetromino >= 0){
-        int tetrominoShape = tetrominos[heldTetromino][0];
+        int tetrominoShape = tetrominos[heldTetromino];
         unsigned int tetrominoColor = tetrominoColors[heldTetromino+1];
         renderTetromino(2,2,tetrominoShape,tetrominoColor);
     }
