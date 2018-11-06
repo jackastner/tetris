@@ -27,16 +27,16 @@ static void updateDisplay();
 const unsigned int tetrominoColors[8] = {0x000000,0x00FFFF,0xFFFF00,0x800080,0x008000,0xFF0000,0x0000FF,0xFFA500};
 
 /* dependant on background texture */
-#define PLAY_FIELD_X_OFFSET 0
-#define PLAY_FIELD_Y_OFFSET 0
+#define PLAY_FIELD_X_OFFSET 75
+#define PLAY_FIELD_Y_OFFSET 75
 
 /* placeholder values */
-#define WINDOW_HEIGHT 100 
-#define WINDOW_WIDTH 100
+#define WINDOW_HEIGHT 600 
+#define WINDOW_WIDTH 300
 
 /* dependant on background texture */
-#define PLAY_FIELD_WIDTH WINDOW_WIDTH
-#define PLAY_FIELD_HEIGHT WINDOW_HEIGHT
+#define PLAY_FIELD_WIDTH (WINDOW_WIDTH - PLAY_FIELD_X_OFFSET)
+#define PLAY_FIELD_HEIGHT (WINDOW_HEIGHT - PLAY_FIELD_Y_OFFSET)
 
 #define BLOCK_WIDTH  (PLAY_FIELD_WIDTH / GAME_WIDTH)
 #define BLOCK_HEIGHT (PLAY_FIELD_HEIGHT / GAME_HEIGHT)
@@ -222,7 +222,7 @@ void initSDL(){
     atexit(TTF_Quit);  //remember to quit SDL_ttf 
    // // atexit(free_font); /* remember to free any loaded font and glyph cache */
 
-    font = TTF_OpenFont("Courier Prime.ttf", 24);
+    font = TTF_OpenFont("LiberationMono-Regular.ttf", 24);
     if(font == NULL){
          fprintf(stderr, "TTF_OpenFont: %s\n", TTF_GetError());
          exit(0);
