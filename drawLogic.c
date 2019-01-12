@@ -8,7 +8,6 @@
 
 /* Unexported function definitions */
 static void renderGame();
-static void renderBackground();
 static void renderScore();
 static void renderTetris();
 static void renderInScoreBox(char* buffer);
@@ -25,7 +24,7 @@ static void handleKeyEvent(SDL_Event event);
 static void updateDisplay();
 
 /* Display constants */
-const unsigned int tetrominoColors[8] = {0x000000,0x00FFFF,0xFFFF00,0x800080,0x008000,0xFF0000,0x0000FF,0xFFA500};
+const unsigned int tetrominoColors[8] = {0x202020,0x00FFFF,0xFFFF00,0x800080,0x008000,0xFF0000,0x0000FF,0xFFA500};
 
 /* dependant on background texture */
 #define PLAY_FIELD_X_OFFSET 150
@@ -48,14 +47,14 @@ const unsigned int tetrominoColors[8] = {0x000000,0x00FFFF,0xFFFF00,0x800080,0x0
 
 #define SHADOW_COLOR 0x545454u
 
+#define BACKGROUND_COLOR 0x000000
+
 /*SDL vars*/
 SDL_Window* window;
 SDL_Renderer* renderer;
-SDL_Texture* background;
 TTF_Font *font;
 
 void renderGame(){
-    renderBackground();
     if(tetris){ 
         renderTetris();
     } else {
@@ -67,10 +66,6 @@ void renderGame(){
 
     renderHeldTetromino();
     renderNextTetromino();
-}
-
-void renderBackground(){
-    SDL_RenderCopy(renderer,background,NULL,NULL);
 }
 
 void renderScore(){
@@ -158,7 +153,7 @@ void setRenderDrawColor(unsigned int rgb){
 }
 
 void clearWindow(){
-    SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+    setRenderDrawColor(0x200020);
     SDL_RenderClear(renderer);
 }
 
@@ -252,16 +247,9 @@ void initSDL(){
     if (window == NULL) {
         fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
     }
-
-    //FILE* backgroundFp = &_binary_background_bmp_start;
-    FILE* backgroundFp = fopen("background.bmp","r");
-    SDL_RWops* backgroundStream = SDL_RWFromFP(backgroundFp, SDL_TRUE);
-    background = SDL_CreateTextureFromSurface(renderer,SDL_LoadBMP_RW(backgroundStream,1));
-
 }
 
 void destroySDL(){
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
-    SDL_DestroyTexture(background);
 }
