@@ -15,6 +15,7 @@ static void renderInScoreBox(char* buffer);
 static void renderPlayingField();
 static void renderCurrentTetromino();
 static void renderHeldTetromino();
+static void renderNextTetromino();
 static void renderTetromino(int xCenter, int yCenter,int tetrominoShape, unsigned int tetrominoColor);
 static void renderTetrominoShadow();
 static void setRenderDrawColor(unsigned int rgb);
@@ -27,23 +28,25 @@ static void updateDisplay();
 const unsigned int tetrominoColors[8] = {0x000000,0x00FFFF,0xFFFF00,0x800080,0x008000,0xFF0000,0x0000FF,0xFFA500};
 
 /* dependant on background texture */
-#define PLAY_FIELD_X_OFFSET 75
-#define PLAY_FIELD_Y_OFFSET 75
+#define PLAY_FIELD_X_OFFSET 150
+#define PLAY_FIELD_Y_OFFSET 25
 
 /* placeholder values */
 #define WINDOW_HEIGHT 600 
-#define WINDOW_WIDTH 300
+#define WINDOW_WIDTH 400
 
 /* dependant on background texture */
-#define PLAY_FIELD_WIDTH (WINDOW_WIDTH - PLAY_FIELD_X_OFFSET)
-#define PLAY_FIELD_HEIGHT (WINDOW_HEIGHT - PLAY_FIELD_Y_OFFSET)
+#define PLAY_FIELD_WIDTH (WINDOW_WIDTH - PLAY_FIELD_X_OFFSET - 25)
+#define PLAY_FIELD_HEIGHT (WINDOW_HEIGHT - PLAY_FIELD_Y_OFFSET - 50)
 
 #define BLOCK_WIDTH  (PLAY_FIELD_WIDTH / GAME_WIDTH)
 #define BLOCK_HEIGHT (PLAY_FIELD_HEIGHT / GAME_HEIGHT)
 
 #define REFRESH_RATE_MICROS 200000u
 /* placeholder value */
-#define INPUT_RATE_MICROS 200000u
+#define INPUT_RATE_MICROS 5000u
+
+#define SHADOW_COLOR 0x545454u
 
 /*SDL vars*/
 SDL_Window* window;
@@ -63,6 +66,7 @@ void renderGame(){
     renderCurrentTetromino();
 
     renderHeldTetromino();
+    renderNextTetromino();
 }
 
 void renderBackground(){
@@ -109,15 +113,26 @@ void renderPlayingField(){
 void renderCurrentTetromino(){
     int tetrominoShape = currentTetrominoShape();
     unsigned int tetrominoColor = tetrominoColors[currentTetromino+1];
-    renderTetromino(currentTetrominoX+PLAY_FIELD_X_OFFSET/BLOCK_WIDTH,currentTetrominoY+PLAY_FIELD_Y_OFFSET/BLOCK_HEIGHT,tetrominoShape,tetrominoColor);
+    renderTetromino(currentTetrominoX, currentTetrominoY, tetrominoShape, tetrominoColor);
+}
+
+void renderTetrominoShadow(){
+    int tetrominoShape = currentTetrominoShape();
+    renderTetromino(shadowX(), shadowY(), tetrominoShape, SHADOW_COLOR);
 }
 
 void renderHeldTetromino(){
     if(heldTetromino >= 0){
         int tetrominoShape = tetrominos[heldTetromino];
         unsigned int tetrominoColor = tetrominoColors[heldTetromino+1];
-        renderTetromino(2,2,tetrominoShape,tetrominoColor);
+        renderTetromino(-5,2,tetrominoShape,tetrominoColor);
     }
+}
+
+void renderNextTetromino(){
+    int tetrominoShape = tetrominos[nextTetromino()];
+    unsigned int tetrominoColor = tetrominoColors[nextTetromino()+1];
+    renderTetromino(-5,10,tetrominoShape,tetrominoColor);
 }
 
 void renderTetromino(int xCenter, int yCenter,int tetrominoShape, unsigned int tetrominoColor ){
@@ -126,15 +141,16 @@ void renderTetromino(int xCenter, int yCenter,int tetrominoShape, unsigned int t
     for(y=-2;y<2;y++){
         for(x=-2;x<2;x++){
             if(isSet(tetrominoShape,x+2,y+2)){
-                SDL_Rect gameSquare = {(xCenter + x)*BLOCK_WIDTH,(yCenter + y)*BLOCK_HEIGHT,BLOCK_WIDTH,BLOCK_HEIGHT};
+                SDL_Rect gameSquare = {
+                    (xCenter + x)*BLOCK_WIDTH + PLAY_FIELD_X_OFFSET,
+                    (yCenter + y)*BLOCK_HEIGHT + PLAY_FIELD_Y_OFFSET,
+                    BLOCK_WIDTH,
+                    BLOCK_HEIGHT
+                };
                 SDL_RenderFillRect(renderer,&gameSquare);
             }
         }
     }
-}
-
-void renderTetrominoShadow(){
-    renderTetromino(shadowX()+PLAY_FIELD_X_OFFSET/BLOCK_WIDTH,shadowY()+PLAY_FIELD_Y_OFFSET/BLOCK_HEIGHT, currentTetrominoShape(),0x545454u);
 }
 
 void setRenderDrawColor(unsigned int rgb){
