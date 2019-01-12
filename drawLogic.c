@@ -41,10 +41,6 @@ const unsigned int tetrominoColors[8] = {0x202020,0x00FFFF,0xFFFF00,0x800080,0x0
 #define BLOCK_WIDTH  (PLAY_FIELD_WIDTH / GAME_WIDTH)
 #define BLOCK_HEIGHT (PLAY_FIELD_HEIGHT / GAME_HEIGHT)
 
-#define REFRESH_RATE_MICROS 200000u
-/* placeholder value */
-#define INPUT_RATE_MICROS 5000u
-
 #define SHADOW_COLOR 0x545454u
 
 #define BACKGROUND_COLOR 0x000000
@@ -163,33 +159,37 @@ void updateDisplay(){
 
 void runGame(){
     SDL_Event event;
-    struct timeval tickStart;
-    gettimeofday(&tickStart,NULL);
+
+    Uint32 tick_interval = 100;
+    Uint32 poll_interval = 50;
+
+    Uint32 last_tick = 0;
+    Uint32 last_poll = 0;
+
     while(1){
         clearWindow();
         renderGame();
         updateDisplay();
 
-        SDL_PollEvent(&event);
-        if(event.type == SDL_QUIT){
+        SDL_PumpEvents();
+        if(SDL_PeepEvents(&event,1,SDL_PEEKEVENT,SDL_QUIT,SDL_QUIT)){
             break;
         }
 
+        Uint32 currentTime = SDL_GetTicks();
 
-        struct timeval currentTime;
-        gettimeofday(&currentTime,NULL);
-
-        unsigned int elapsedMicroseconds = currentTime.tv_usec - tickStart.tv_usec;
-
-        if(elapsedMicroseconds >= INPUT_RATE_MICROS){
-            if(event.type == SDL_KEYDOWN && event.key.type == SDL_KEYDOWN){
-                handleKeyEvent(event);
+        if(SDL_TICKS_PASSED(currentTime, last_poll + poll_interval)){
+            while(SDL_PeepEvents(&event,1,SDL_GETEVENT,SDL_FIRSTEVENT,SDL_LASTEVENT)){
+                if(event.type == SDL_KEYDOWN && event.key.type == SDL_KEYDOWN){
+                   handleKeyEvent(event);
+                }
             }
+            last_poll = currentTime;
         }
 
-        if(elapsedMicroseconds >= REFRESH_RATE_MICROS - score*100){
+        if(SDL_TICKS_PASSED(currentTime, last_tick + tick_interval)){
             advanceGame();
-            gettimeofday(&tickStart,NULL);
+            last_tick = currentTime;
         }
     }
 }
