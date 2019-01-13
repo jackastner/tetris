@@ -30,30 +30,32 @@ static void updateDisplay();
 static int handleKeyEvent(SDL_Event event);
 static void handleGameEvent(SDL_Event event);
 static int handleMenuEvent(SDL_Event event);
-static int handleButtonClick(int buttonId);
+static int handleMenuButtonClick(int buttonId);
+static void handleGameButtonClick(int buttonId);
+static int getButtonClicked(SDL_Point* p);
 static void updateDisplay();
 static void renderButton(SDL_Rect* button_rect, char* text);
+static void renderControls();
 
 /* Display constants */
 const unsigned int tetrominoColors[8] = {0x202020,0x00FFFF,0xFFFF00,0x800080,0x008000,0xFF0000,0x0000FF,0xFFA500};
 
 /* dependant on background texture */
-#define PLAY_FIELD_X_OFFSET 150
-#define PLAY_FIELD_Y_OFFSET 25
+#define PLAY_FIELD_X_OFFSET (WINDOW_WIDTH / 4)
+#define PLAY_FIELD_Y_OFFSET (WINDOW_WIDTH / 24)
 
 /* placeholder values */
 #define WINDOW_HEIGHT 600 
 #define WINDOW_WIDTH 400
 
 /* dependant on background texture */
-#define PLAY_FIELD_WIDTH (WINDOW_WIDTH - PLAY_FIELD_X_OFFSET - 25)
-#define PLAY_FIELD_HEIGHT (WINDOW_HEIGHT - PLAY_FIELD_Y_OFFSET - 50)
+#define PLAY_FIELD_WIDTH (WINDOW_WIDTH / 2)
+#define PLAY_FIELD_HEIGHT (6 * WINDOW_HEIGHT / 7)
 
 #define BLOCK_WIDTH  (PLAY_FIELD_WIDTH / GAME_WIDTH)
 #define BLOCK_HEIGHT (PLAY_FIELD_HEIGHT / GAME_HEIGHT)
 
 #define SHADOW_COLOR 0x545454u
-
 #define BACKGROUND_COLOR 0x000000
 
 /*SDL vars*/
@@ -61,32 +63,82 @@ SDL_Window* window;
 SDL_Renderer* renderer;
 TTF_Font *font;
 
+float width_scale, height_scale;
+
 typedef enum {
     BUTTON_PLAY,
     BUTTON_QUIT,
-    BUTTON_COUNT
+    BUTTON_LEFT,
+    BUTTON_RIGHT,
+    BUTTON_CLOCKWISE,
+    BUTTON_COUNTERCLOCKWISE,
+    BUTTON_HOLD,
+    BUTTON_DROP,
+    BUTTON_COUNT,
+    BUTTON_INVALID = -1
 } Button;
 
 char* buttonStrings[] = {
     "Play",
-    "Quit"
+    "Quit",
+    "<-",
+    "->",
+    "^_)",
+    "(_^",
+    "Hold",
+    "Drop"
 };
 
 SDL_Rect buttonRects[] = {
     {
-        WINDOW_WIDTH / 12,
-        WINDOW_HEIGHT / 2,
+        0,
+        11 * WINDOW_HEIGHT / 30,
         WINDOW_WIDTH / 4,
         WINDOW_HEIGHT / 10
-    },
+    }, // BUTTON PLAY
     {
-        WINDOW_WIDTH / 12,
-        13 * WINDOW_HEIGHT / 20,
+        0,
+        14 * WINDOW_HEIGHT / 30,
         WINDOW_WIDTH / 4,
         WINDOW_HEIGHT / 10
-    }
+    }, // BUTTON QUIT
+    {
+        0,
+        18 * WINDOW_HEIGHT / 30,
+        WINDOW_WIDTH / 8,
+        WINDOW_HEIGHT / 10,
+    }, // BUTTON LEFT
+    {
+        WINDOW_WIDTH / 8,
+        18 * WINDOW_HEIGHT / 30,
+        WINDOW_WIDTH / 8,
+        WINDOW_HEIGHT / 10,
+    }, // BUTTON RIGHT
+    {
+        7 * WINDOW_WIDTH / 8,
+        18 * WINDOW_HEIGHT / 30,
+        WINDOW_WIDTH / 8,
+        WINDOW_HEIGHT / 10,
+    }, //BUTTON CLOCKWISE
+    {
+        6 * WINDOW_WIDTH / 8,
+        18 * WINDOW_HEIGHT / 30,
+        WINDOW_WIDTH / 8,
+        WINDOW_HEIGHT / 10,
+    }, //BUTTON COUNTERCLOCKWISE
+    {
+        0,
+        21 * WINDOW_HEIGHT / 30,
+        WINDOW_WIDTH / 4,
+        WINDOW_HEIGHT / 10,
+    }, //BUTTON HOLD
+    {
+        6 * WINDOW_WIDTH / 8,
+        21 * WINDOW_HEIGHT / 30,
+        WINDOW_WIDTH / 4,
+        WINDOW_HEIGHT / 10,
+    } //BUTTON DROP
 };
-
 
 void renderGame(){
     if(tetris){ 
@@ -100,11 +152,21 @@ void renderGame(){
 
     renderHeldTetromino();
     renderNextTetromino();
+    renderControls();
 }
 
 void renderMenu(){
     renderButton(&buttonRects[BUTTON_PLAY], buttonStrings[BUTTON_PLAY]);
     renderButton(&buttonRects[BUTTON_QUIT], buttonStrings[BUTTON_QUIT]);
+}
+
+void renderControls(){
+    renderButton(&buttonRects[BUTTON_LEFT], buttonStrings[BUTTON_LEFT]);
+    renderButton(&buttonRects[BUTTON_RIGHT], buttonStrings[BUTTON_RIGHT]);
+    renderButton(&buttonRects[BUTTON_CLOCKWISE], buttonStrings[BUTTON_CLOCKWISE]);
+    renderButton(&buttonRects[BUTTON_COUNTERCLOCKWISE], buttonStrings[BUTTON_COUNTERCLOCKWISE]);
+    renderButton(&buttonRects[BUTTON_HOLD], buttonStrings[BUTTON_HOLD]);
+    renderButton(&buttonRects[BUTTON_DROP], buttonStrings[BUTTON_DROP]);
 }
 
 void renderScore(){
@@ -264,7 +326,7 @@ int handleKeyEvent(SDL_Event event){
 }
 
 
-int handleButtonClick(int buttonId){
+int handleMenuButtonClick(int buttonId){
     switch (buttonId){
         case BUTTON_PLAY:
             resetState();
@@ -276,18 +338,47 @@ int handleButtonClick(int buttonId){
     return 1;
 }
 
+int getButtonClicked(SDL_Point* p){
+    SDL_Point scaled_p =  {p->x / width_scale, p->y / height_scale};
+    for(int i = 0; i < BUTTON_COUNT; i++){
+        SDL_Rect buttonRect = buttonRects[i];
+        if(SDL_PointInRect(&scaled_p, &buttonRect)){
+            return i;
+        }
+    }
+    return BUTTON_INVALID;
+}
 
 int handleMenuEvent(SDL_Event event){
     if(event.type == SDL_MOUSEBUTTONDOWN){
         SDL_Point p = {event.button.x, event.button.y};
-        for(int i = 0; i < BUTTON_COUNT; i++){
-            SDL_Rect buttonRect = buttonRects[i];
-            if(SDL_PointInRect(&p, &buttonRect)){
-                return handleButtonClick(i);
-            }
-        }
+        int button = getButtonClicked(&p);
+        return handleMenuButtonClick(button);
     }
     return 1;
+}
+
+void handleGameButtonClick(int buttonId){
+    switch (buttonId){
+        case BUTTON_LEFT:
+            moveTetromino(-1);
+            break;
+        case BUTTON_RIGHT:
+            moveTetromino(1);
+            break;
+        case BUTTON_CLOCKWISE:
+            rotateTetrominoClockwise();
+            break;
+        case BUTTON_COUNTERCLOCKWISE:
+            rotateTetrominoCounterClockwise();
+            break;
+        case BUTTON_HOLD:
+            holdTetromino();
+            break;
+        case BUTTON_DROP:
+            dropTetromino();
+            break;
+    }
 }
 
 void handleGameEvent(SDL_Event event){
@@ -310,6 +401,10 @@ void handleGameEvent(SDL_Event event){
         if(event.key.keysym.sym == SDLK_SPACE){
             dropTetromino();
         }
+    } else if(event.type == SDL_MOUSEBUTTONDOWN){
+        SDL_Point p = {event.button.x, event.button.y};
+        int button = getButtonClicked(&p);
+        handleGameButtonClick(button);
     }
 }
 
@@ -345,6 +440,13 @@ void initSDL(){
     if (window == NULL) {
         fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
     }
+
+    int real_width, real_height;
+    SDL_GetWindowSize(window, &real_width, &real_height);
+    width_scale  = ((float) real_width) / WINDOW_WIDTH;
+    height_scale = ((float) real_height) / WINDOW_HEIGHT;
+    SDL_RenderSetScale(renderer, width_scale, height_scale);
+
 }
 
 void destroySDL(){
