@@ -20,9 +20,11 @@ void moveTetromino(int direction);
 void rotateTetrominoCounterClockwise();
 void rotateTetrominoClockwise();
 void advanceGame();
+void resetState();
 int nextTetromino();
 
 /* public game accessor functions */
+int isGameOver();
 int isSet(int tetrominoShape, int x, int y);
 int currentTetrominoShape();
 int shadowX();

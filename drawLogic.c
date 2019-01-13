@@ -8,6 +8,7 @@
 
 /* Unexported function definitions */
 static void renderGame();
+static void renderMenu();
 static void renderScore();
 static void renderTetris();
 static void renderInScoreBox(char* buffer);
@@ -20,8 +21,12 @@ static void renderTetrominoShadow();
 static void setRenderDrawColor(unsigned int rgb);
 static void clearWindow();
 static void updateDisplay();
-static void handleKeyEvent(SDL_Event event);
+static int handleKeyEvent(SDL_Event event);
+static void handleGameEvent(SDL_Event event);
+static int handleMenuEvent(SDL_Event event);
+static int handleButtonClick(int buttonId);
 static void updateDisplay();
+static void renderButton(SDL_Rect* button_rect, char* text);
 
 /* Display constants */
 const unsigned int tetrominoColors[8] = {0x202020,0x00FFFF,0xFFFF00,0x800080,0x008000,0xFF0000,0x0000FF,0xFFA500};
@@ -50,6 +55,33 @@ SDL_Window* window;
 SDL_Renderer* renderer;
 TTF_Font *font;
 
+typedef enum {
+    BUTTON_PLAY,
+    BUTTON_QUIT,
+    BUTTON_COUNT
+} Button;
+
+char* buttonStrings[] = {
+    "Play",
+    "Quit"
+};
+
+SDL_Rect buttonRects[] = {
+    {
+        WINDOW_WIDTH / 12,
+        WINDOW_HEIGHT / 2,
+        WINDOW_WIDTH / 4,
+        WINDOW_HEIGHT / 10
+    },
+    {
+        WINDOW_WIDTH / 12,
+        13 * WINDOW_HEIGHT / 20,
+        WINDOW_WIDTH / 4,
+        WINDOW_HEIGHT / 10
+    }
+};
+
+
 void renderGame(){
     if(tetris){ 
         renderTetris();
@@ -64,6 +96,11 @@ void renderGame(){
     renderNextTetromino();
 }
 
+void renderMenu(){
+    renderButton(&buttonRects[BUTTON_PLAY], buttonStrings[BUTTON_PLAY]);
+    renderButton(&buttonRects[BUTTON_QUIT], buttonStrings[BUTTON_QUIT]);
+}
+
 void renderScore(){
     char buffer [12];
     sprintf(buffer,"Score %4d",score);
@@ -76,7 +113,7 @@ void renderTetris(){
 }
 
 void renderInScoreBox(char* buffer){
-    SDL_Color color = {0,0,0,0};
+    SDL_Color color = {0xff,0xff,0,0};
     SDL_Rect textRect = {PLAY_FIELD_X_OFFSET,WINDOW_HEIGHT-48,PLAY_FIELD_WIDTH,24};
 
     SDL_Surface* textSurface = TTF_RenderText_Solid(font,buffer,color);
@@ -144,6 +181,18 @@ void renderTetromino(int xCenter, int yCenter,int tetrominoShape, unsigned int t
     }
 }
 
+void renderButton(SDL_Rect* button_rect, char* text){
+    setRenderDrawColor(0xffff00);
+    SDL_RenderDrawRect(renderer, button_rect);
+
+    SDL_Color color = {0xff,0xff,0x00};
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text, color);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer,textSurface);
+    SDL_RenderCopy(renderer,textTexture,NULL,button_rect);
+    SDL_DestroyTexture(textTexture);
+    SDL_FreeSurface(textSurface);
+}
+
 void setRenderDrawColor(unsigned int rgb){
     SDL_SetRenderDrawColor(renderer,(rgb>>16)&0xFF,(rgb>>8)&0xFF,rgb&0xFF,255);
 }
@@ -166,9 +215,14 @@ void runGame(){
     Uint32 last_tick = 0;
     Uint32 last_poll = 0;
 
+    resetState();
+
     while(1){
         clearWindow();
         renderGame();
+        if(isGameOver()){
+            renderMenu();
+        }
         updateDisplay();
 
         SDL_PumpEvents();
@@ -180,38 +234,76 @@ void runGame(){
 
         if(SDL_TICKS_PASSED(currentTime, last_poll + poll_interval)){
             while(SDL_PeepEvents(&event,1,SDL_GETEVENT,SDL_FIRSTEVENT,SDL_LASTEVENT)){
-                if(event.type == SDL_KEYDOWN && event.key.type == SDL_KEYDOWN){
-                   handleKeyEvent(event);
-                }
+               if(!handleKeyEvent(event)){
+                   break;
+               }
             }
             last_poll = currentTime;
         }
 
-        if(SDL_TICKS_PASSED(currentTime, last_tick + tick_interval)){
+        if(!isGameOver() && SDL_TICKS_PASSED(currentTime, last_tick + tick_interval)){
             advanceGame();
             last_tick = currentTime;
         }
     }
 }
 
-void handleKeyEvent(SDL_Event event){
-    if(event.key.keysym.sym == SDLK_s){
-        rotateTetrominoClockwise();
+int handleKeyEvent(SDL_Event event){
+    if(isGameOver()){
+        return handleMenuEvent(event);
+    } else {
+        handleGameEvent(event);
     }
-    if(event.key.keysym.sym == SDLK_w){
-        rotateTetrominoCounterClockwise();
+    return 1;
+}
+
+
+int handleButtonClick(int buttonId){
+    switch (buttonId){
+        case BUTTON_PLAY:
+            resetState();
+            break;
+        case BUTTON_QUIT:
+            SDL_Quit();
+            return 0;
     }
-    if(event.key.keysym.sym == SDLK_a){
-        moveTetromino(-1);
+    return 1;
+}
+
+
+int handleMenuEvent(SDL_Event event){
+    if(event.type == SDL_MOUSEBUTTONDOWN){
+        SDL_Point p = {event.button.x, event.button.y};
+        for(int i = 0; i < BUTTON_COUNT; i++){
+            SDL_Rect buttonRect = buttonRects[i];
+            if(SDL_PointInRect(&p, &buttonRect)){
+                return handleButtonClick(i);
+            }
+        }
     }
-    if(event.key.keysym.sym == SDLK_d){
-        moveTetromino(1);
-    }
-    if(event.key.keysym.sym == SDLK_LSHIFT){
-        holdTetromino();
-    }
-    if(event.key.keysym.sym == SDLK_SPACE){
-        dropTetromino();
+    return 1;
+}
+
+void handleGameEvent(SDL_Event event){
+    if(event.type == SDL_KEYDOWN && event.key.type == SDL_KEYDOWN){
+        if(event.key.keysym.sym == SDLK_s){
+            rotateTetrominoClockwise();
+        }
+        if(event.key.keysym.sym == SDLK_w){
+            rotateTetrominoCounterClockwise();
+        }
+        if(event.key.keysym.sym == SDLK_a){
+            moveTetromino(-1);
+        }
+        if(event.key.keysym.sym == SDLK_d){
+            moveTetromino(1);
+        }
+        if(event.key.keysym.sym == SDLK_LSHIFT){
+            holdTetromino();
+        }
+        if(event.key.keysym.sym == SDLK_SPACE){
+            dropTetromino();
+        }
     }
 }
 

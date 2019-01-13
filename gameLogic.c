@@ -4,23 +4,24 @@
 
 const int tetrominos[5] = {0x0F00, 0x0660, 0x0446, 0x0462, 0x0720};
 
-int playingField[GAME_HEIGHT][GAME_WIDTH] = {0};
+int playingField[GAME_HEIGHT][GAME_WIDTH];
 
 /* public state variables */
-int score = 0;
-int tetris = 0;
-int prev_tetris = 0;
-int heldTetromino =  -1;
-int currentTetromino = 2;
-int currentTetrominoX = GAME_WIDTH / 2;
-int currentTetrominoY = 0;
+int score;
+int tetris;
+int prevTetris;
+int heldTetromino;
+int currentTetromino;
+int currentTetrominoX;
+int currentTetrominoY;
 
 /* private state variables */
-static int rotationState = 0;
-static int holdUsed = 0;
+static int rotationState;
+static int holdUsed;
 
 /* private functions */
 static int atBottom();
+static int atTop();
 static int tetrominoTop(int tetromino);
 static int tetrominoBottom(int tetromino);
 static int tetrominoLeft(int tetromino);
@@ -31,6 +32,21 @@ static void clearRows(int start, int end);
 static void tryClearRows();
 static void setTetromino(int tetrominoNum);
 static void startNextTetromino();
+
+int isGameOver(){
+    return atBottom() && atTop();
+}
+
+void resetState(){
+    score = 0;
+    tetris = 0;
+    prevTetris = 0;
+    heldTetromino = -1;
+    rotationState = 0;
+    holdUsed = 0;
+    bzero(playingField, sizeof(int) * GAME_HEIGHT * GAME_WIDTH);
+    setTetromino(2);
+}
 
 void placeTetromino() {
     for(int y=-2; y<2 ;y++){
@@ -164,15 +180,15 @@ void tryClearRows() {
 void clearRows(int start, int end){
     int clear_size = end-start;
     if(clear_size == 4){
-        if(prev_tetris){
+        if(prevTetris){
             score += 1200;
         } else {
             score += 800;
         }
         tetris = 1;
-        prev_tetris = 1;
+        prevTetris = 1;
     } else {
-        prev_tetris = 0;
+        prevTetris = 0;
         score += clear_size * 100;
     }
     for(int r = end - 1; r >= clear_size; r--){
@@ -245,6 +261,10 @@ int atBottom(){
         }
     }
     return 0;
+}
+
+int atTop() {
+    return currentTetrominoY ==  -tetrominoTop(tetrominos[currentTetromino]);
 }
 
 int isSet(int tetrominoShape, int x, int y) {
