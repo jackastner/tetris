@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+#define MS_TO_S 1000
+
 /* Unexported function definitions */
 static void renderGame();
 static void renderMenu();
@@ -279,26 +281,31 @@ void runGame(){
 
     Uint32 tick_interval = 100;
     Uint32 poll_interval = 50;
+    Uint32 frame_interval = MS_TO_S / 30;
 
     Uint32 last_tick = 0;
     Uint32 last_poll = 0;
+    Uint32 last_frame = 0;
 
     resetState();
 
     while(1){
-        clearWindow();
-        renderGame();
-        if(isGameOver()){
-            renderMenu();
-        }
-        updateDisplay();
-
         SDL_PumpEvents();
         if(SDL_PeepEvents(&event,1,SDL_PEEKEVENT,SDL_QUIT,SDL_QUIT)){
             break;
         }
 
         Uint32 currentTime = SDL_GetTicks();
+
+        if(SDL_TICKS_PASSED(currentTime, last_frame + frame_interval)){ 
+            clearWindow();
+            renderGame();
+            if(isGameOver()){
+                renderMenu();
+            }
+            updateDisplay();
+            last_frame = currentTime;
+        }
 
         if(SDL_TICKS_PASSED(currentTime, last_poll + poll_interval)){
             while(SDL_PeepEvents(&event,1,SDL_GETEVENT,SDL_FIRSTEVENT,SDL_LASTEVENT)){
