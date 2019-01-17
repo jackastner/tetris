@@ -1,8 +1,10 @@
 #include "gameLogic.h"
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
 
-const int tetrominos[5] = {0x0F00, 0x0660, 0x0446, 0x0462, 0x0720};
+const int tetrominos[7] = {0x0F00, 0x0660, 0x0E20, 0x0740, 0x0360, 0x0630, 0x0720};
 
 int playingField[GAME_HEIGHT][GAME_WIDTH];
 
@@ -12,10 +14,9 @@ int tetris;
 int prevTetris;
 int heldTetromino;
 int currentTetromino;
+int nextTetrominoIdx;
 int currentTetrominoX;
 int currentTetrominoY;
-
-/* private state variables */
 static int rotationState;
 static int holdUsed;
 
@@ -38,6 +39,7 @@ int isGameOver(){
 }
 
 void resetState(){
+    srand(time(NULL));
     score = 0;
     tetris = 0;
     prevTetris = 0;
@@ -45,7 +47,7 @@ void resetState(){
     rotationState = 0;
     holdUsed = 0;
     bzero(playingField, sizeof(int) * GAME_HEIGHT * GAME_WIDTH);
-    setTetromino(2);
+    startNextTetromino();
 }
 
 void placeTetromino() {
@@ -135,11 +137,12 @@ void advanceGame() {
 }
 
 void startNextTetromino(){
-    setTetromino(nextTetromino());
+    setTetromino(nextTetrominoIdx);
+    nextTetrominoIdx = rand() % 7;
 }
 
 int nextTetromino(){
-    return (currentTetromino + 1) % 5;
+    return nextTetrominoIdx;
 }
 
 void setTetromino(int tetrominoNum){
@@ -277,7 +280,7 @@ int isSet(int tetrominoShape, int x, int y) {
         rot_y = x;
     }
 
-    if(rotationState == 2 || rotationState == 4){
+    if(rotationState == 2 || rotationState == 3 || rotationState == 4){
         rot_x = 3 - rot_x;
     }
 

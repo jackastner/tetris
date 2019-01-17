@@ -1,6 +1,6 @@
 #ifndef GAME_LOGIC_H
 #define GAME_LOGIC_H
-const int tetrominos[5];
+const int tetrominos[7];
 
 #define GAME_HEIGHT 30
 #define GAME_WIDTH 12
